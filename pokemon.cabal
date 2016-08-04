@@ -1,0 +1,194 @@
+name:                 pokemon
+synopsis:             Pokemon Go Client
+version:              0.0.1
+cabal-version:        >= 1.10
+license:              AGPL-3
+license-file:         LICENSE.md
+build-type:           Custom
+author:               iphy
+maintainer:           iphy
+copyright:            © 2016 iphy
+homepage:             http://pokemon.github.io
+category:             Network
+description:          A Pokemon Go protocol implementation in Haskell
+
+extra-source-files:
+  protos/src/Pokemon.proto
+
+source-repository head
+  type: git
+  location: https://github.com/pokemon/pokemon-go
+
+library
+  default-language: Haskell2010
+  hs-source-dirs:
+      src
+  ghc-options:
+      -Wall
+      -fno-warn-unused-imports
+  build-depends:
+      base < 5
+    , QuickCheck
+    , aeson
+    , array
+    , base16-bytestring
+    , binary
+    , bytestring
+    , conduit
+    , conduit-extra
+    , data-binary-ieee754
+    , dbus
+    , deepseq
+    , exceptions
+    , geocode-google
+    , http-conduit
+    , http-types
+    , ieee754
+    , mtl
+    , proto-lens
+    , proto-lens-protoc
+    , random
+    , resourcet
+    , safe
+    , stm
+    , text
+    , time
+    , transformers
+  extra-libraries:
+    stdc++
+    crypto
+    ssl
+  include-dirs:
+    /usr/local/opt/openssl/include
+    src/Algorithms/Geometry/S2/CPP/s2/geometry
+    src/Algorithms/Geometry/S2/CPP/s2/geometry/s2
+  cc-options:
+    -DNDEBUG
+    -DS2_USE_EXACTFLOAT
+    -Wno-return-type-c-linkage
+    -Wno-#warnings
+    -std=c99
+  c-sources:
+    src/Algorithms/Geometry/S2/CPP/s2/geometry/base/logging.cc
+    src/Algorithms/Geometry/S2/CPP/s2/geometry/base/strtoint.cc
+    src/Algorithms/Geometry/S2/CPP/s2/geometry/base/stringprintf.cc
+    src/Algorithms/Geometry/S2/CPP/s2/geometry/strings/strutil.cc
+    src/Algorithms/Geometry/S2/CPP/s2/geometry/strings/split.cc
+    src/Algorithms/Geometry/S2/CPP/s2/geometry/util/hash/hash.cc
+    src/Algorithms/Geometry/S2/CPP/s2/geometry/s1angle.cc
+    src/Algorithms/Geometry/S2/CPP/s2/geometry/s2cellid.cc
+    src/Algorithms/Geometry/S2/CPP/s2/geometry/s2latlng.cc
+    src/Algorithms/Geometry/S2/CPP/s2/geometry/s2.cc
+    src/Algorithms/Geometry/S2/CPP/s2/geometry/util/math/exactfloat/exactfloat.cc
+    src/Algorithms/Geometry/S2/CPP/S1Angle.cc
+    src/Algorithms/Geometry/S2/CPP/S2CellId.cc
+    src/Algorithms/Geometry/S2/CPP/S2LatLng.cc
+    src/Algorithms/Geometry/S2/CPP/S2Point.cc
+    src/Algorithms/Geometry/S2/CPP/S2Projections.cc
+    src/encrypt.c
+    src/encrypt_clean.c
+    src/xxHash/xxhash.c
+  other-modules:
+    Proto.Pokemon
+  exposed-modules:
+    Algorithms.Geometry.S2.CPP.S1Angle
+    Algorithms.Geometry.S2.CPP.S2Cap
+    Algorithms.Geometry.S2.CPP.S2CellId
+    Algorithms.Geometry.S2.CPP.S2LatLng
+    Algorithms.Geometry.S2.CPP.S2Point
+    Algorithms.Geometry.S2.CPP.S2Projections
+    Algorithms.Geometry.S2.CMath
+    Algorithms.Geometry.S2.Metric
+    Algorithms.Geometry.S2.R1Interval
+    Algorithms.Geometry.S2.R2Vector
+    Algorithms.Geometry.S2.S1Angle
+    Algorithms.Geometry.S2.S1Interval
+    Algorithms.Geometry.S2.S2
+    Algorithms.Geometry.S2.S2AreaCentroid
+    Algorithms.Geometry.S2.S2Cap
+    Algorithms.Geometry.S2.S2Cell
+    Algorithms.Geometry.S2.S2CellId
+    Algorithms.Geometry.S2.S2CellIds
+    Algorithms.Geometry.S2.S2CellUnion
+    Algorithms.Geometry.S2.S2Edge
+    Algorithms.Geometry.S2.S2EdgeIndex
+    Algorithms.Geometry.S2.S2EdgeUtil
+    Algorithms.Geometry.S2.S2LatLng
+    Algorithms.Geometry.S2.S2LatLngRect
+    Algorithms.Geometry.S2.S2Loop
+    Algorithms.Geometry.S2.S2Point
+    Algorithms.Geometry.S2.S2Polygon
+    Algorithms.Geometry.S2.S2PolygonBuilder
+    Algorithms.Geometry.S2.S2Polyline
+    Algorithms.Geometry.S2.S2Projections
+    Algorithms.Geometry.S2.S2Region
+    Algorithms.Geometry.S2.S2RegionCoverer
+    Data.Result
+    Foreign.Cpp
+    Pokemon.Api
+    Pokemon.AuthRequest
+    Pokemon.Config
+    Pokemon.Encrypt
+    Pokemon.Envelope
+    Pokemon.Game
+    Pokemon.Geolocation.GeoClue2
+    Pokemon.Geolocation.Geocode
+    Pokemon.Location
+    Pokemon.Login
+    Pokemon.LoginRequest
+    Pokemon.LoginToken
+    Pokemon.Network
+    Pokemon.Profile
+    Pokemon.Proto
+    Pokemon.Rpc
+
+executable pokemon
+  default-language: Haskell2010
+  hs-source-dirs:
+      tools
+  ghc-options:
+      -Wall
+      -fno-warn-unused-imports
+  build-depends:
+      base < 5
+    , pokemon
+    , data-default-class
+    , directory
+    , groom
+    , proto-lens
+    , resourcet
+    , transformers
+  main-is: pokemon.hs
+
+test-suite testsuite
+  default-language: Haskell2010
+  type: exitcode-stdio-1.0
+  hs-source-dirs:
+      test
+  ghc-options:
+      -Wall
+      -fno-warn-unused-imports
+  build-depends:
+      base < 5
+    , pokemon
+    , QuickCheck
+    , bytestring
+    , data-default-class
+    , ieee754
+    , hspec
+    , random
+  main-is: testsuite.hs
+
+benchmark benchmarks
+  default-language: Haskell2010
+  type: exitcode-stdio-1.0
+  hs-source-dirs:
+      bench
+  ghc-options:
+      -Wall
+      -fno-warn-unused-imports
+  build-depends:
+      base < 5
+    , pokemon
+    , criterion
+  main-is: benchmarks.hs

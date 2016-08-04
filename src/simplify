@@ -1,0 +1,119 @@
+#!/usr/bin/env perl
+
+use strict;
+
+my ($IN, $OUT) = @ARGV;
+
+my @lines = do { open my $fh, '<', $IN or die $!; <$fh> };
+
+my $more = 1;
+my $cycle = 1;
+sub progress {
+   print STDERR "[=] " if $more;
+   print STDERR "@_";
+   print STDERR "\n" if $more;
+}
+
+sub fixpoint(&) {
+   my ($f) = @_;
+   $more = 1;
+   $cycle = 1;
+   while ($more) {
+      $more = 0;
+      print STDERR "\r[=] cycle $cycle: ";
+      $f->();
+      ++$cycle;
+   }
+   print STDERR "\n";
+   $more = 1;
+}
+
+progress "use uint32_t instead of unsigned char for parameters, and return void";
+for (@lines) {
+   s/\treturn result;\n//;
+   if (/^unsigned char/) {
+      s/unsigned char/uint32_t/g;
+      s/uint32_t\s*\* sub_/static void clean_sub_/;
+   }
+   s/\b(sub_\w+)/clean_$1/g;
+   s/\bencrypt\b/encrypt_clean/g;
+   s/\(unsigned char\*\)//g;
+   s/\*\(_DWORD \*\)\((\w+) \+ (\d+)\)/$1\[$2 \/ 4]/g;
+   s/\*\(_DWORD \*\)(\w+)/$1\[0 \/ 4]/g;
+}
+
+fixpoint {
+   progress "constant fold indexes (n/4)";
+   for (@lines) {
+      if (/\[(\d+) \/ 4\]/) {
+         die "unaligned memory access: $1" if $1 % 4;
+         my $index = $1 / 4;
+         s/\[$1 \/ 4\]/[$index]/g;
+         $more = 1;
+      }
+   }
+};
+
+progress "marking all v* variables as const";
+@lines = grep { !/\tint v/ } @lines;
+for (@lines) {
+   s/\t(v\d+ = )/\tuint32_t const $1/;
+}
+
+progress "breaking code into blocks (functions and other stuff)";
+my @blocks = ([]);
+for (@lines) {
+   push @blocks, [] if /^{/;
+   my $block = $blocks[$#blocks];
+   push @$block, $_;
+}
+
+sub is_constexpr {
+   # a2 is never written to (a3 is).
+   not $_[0] =~ /\b(?:result|a3|v\d+)\b/
+}
+
+fixpoint {
+   progress "inlining all accesses to constant memory";
+   for my $block (@blocks) {
+      my %constvals;
+      my %writes;
+
+      for my $line (@$block) {
+         if ($line =~ /\t(\w+)\[(\d+)\] = /) {
+            $writes{$1}{$2}++;
+         }
+
+         if ($line =~ /uint32_t const (\w+) = (.*);/ and is_constexpr $2) {
+            $constvals{$1} = $2;
+            $line =~ s/.*\n//; # erase line
+            $more = 1;
+         } elsif ($line =~ /uint32_t const (\w+) = (\w+)\[(\d+)\];/ and $writes{$2} and $writes{$2}{$3} == 0) {
+            # Not working yet:
+            #$constvals{$1} = "$2\[$3\]";
+            #$line =~ s/.*\n//; # erase line
+            #$more = 1;
+         } else {
+            for (keys %constvals) {
+               $line =~ s/\b$_\b/($constvals{$_})/g;
+            }
+         }
+      }
+   }
+};
+
+fixpoint {
+   progress "removing redundant parentheses";
+   for (@blocks) {
+      for (@$_) {
+         if (/\t.* = .*;$/ and s/\(([^()^&|]+)\)/$1/g) {
+            $more = 1;
+         }
+      }
+   }
+};
+
+open my $fh, '>', $OUT or die $!;
+for (@blocks) {
+   print $fh $_ for @$_;
+}

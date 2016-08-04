@@ -1,0 +1,45 @@
+language: c
+compiler: clang
+
+addons:
+  apt:
+    sources:
+      - hvr-ghc
+    packages:
+      - cabal-install-1.22
+      - ghc-8.0.1
+
+cache:
+  directories:
+    - $HOME/.cabal
+    - $HOME/.ghc
+
+install:
+  # Set up PATH for the /opt packages.
+  - export PATH=/opt/cabal/1.22/bin:$PATH
+  - export PATH=/opt/ghc/8.0.1/bin:$PATH
+  - export PATH=$HOME/.cabal/bin:$PATH
+  # Make sure the submodules are up-to-date.
+  - git submodule foreach "git checkout master && git pull"
+  # Generate required sources.
+  - make -j protos/src/Pokemon.proto src/encrypt.c src/encrypt_clean.c
+  # Build and install dependencies.
+  - cabal update
+  - cabal install stylish-haskell hlint happy
+  - cabal install --only-dependencies --enable-tests --enable-benchmarks
+  - cabal install hpc-coveralls
+  # Get a protobuf 3 compiler.
+  - curl -o $HOME/.cabal/bin/protoc https://raw.githubusercontent.com/os72/protoc-jar/master/bin_300/linux/protoc
+  - chmod +x $HOME/.cabal/bin/protoc
+
+script:
+  - cabal configure --disable-profiling --enable-tests --enable-benchmarks
+  - cabal build --jobs=$(nproc)
+  - cabal test  --jobs=$(nproc)
+  - cabal bench --jobs=$(nproc)
+  - hlint bench src test tools
+  - stylish-haskell -i $(find bench src test tools -name "*.hs")
+  - git diff --exit-code --ignore-submodules
+
+after_script:
+  - hpc-coveralls pokemon

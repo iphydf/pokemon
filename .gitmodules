@@ -1,0 +1,9 @@
+[submodule "protos"]
+	path = protos
+	url = https://github.com/AeonLucid/POGOProtos
+[submodule "s2"]
+  path = src/Algorithms/Geometry/S2/CPP/s2
+  url = https://github.com/micolous/s2-geometry-library
+[submodule "xxHash"]
+  path = src/xxHash
+  url = https://github.com/Cyan4973/xxHash
