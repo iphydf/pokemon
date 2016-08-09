@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Pokemon.EncryptSpec where
 
-import           Control.Monad   (when)
+import           Control.Monad   (join, when)
 import qualified Data.ByteString as BS
 import           System.Random   (randomIO)
 import           Test.Hspec
@@ -40,6 +40,13 @@ spec = do
         let inputSize = BS.length (Encrypt.unPlainText input)
         let totalSize = inputSize + Encrypt.blockSize - (inputSize `rem` Encrypt.blockSize) + Encrypt.expectedIvSize
         BS.length encrypted `shouldBe` totalSize
+
+    it "operates on 4 bytes at a time" $ do
+      let input = Encrypt.PlainText . BS.take (Encrypt.blockSize - 1) . BS.pack . join . map (replicate 4) $ [0..63]
+      encrypted <-
+        BS.unpack . BS.drop Encrypt.expectedIvSize . Encrypt.unCipherText
+          <$> Encrypt.encryptIO Encrypt.nullIV input
+      length encrypted `shouldBe` Encrypt.blockSize
 
     it "does not lose information" $ do
       let input = Encrypt.PlainText $ BS.pack [0..254]

@@ -6,20 +6,30 @@ else
 PROCS	:= $(shell sysctl -n hw.ncpu)
 endif
 
+
 .PHONY: run
-run: $(SOURCES)
+run: dist/build/pokemon/pokemon
 	cabal run pokemon --jobs=$(PROCS)
 
 .PHONY: bench
-bench: $(SOURCES)
+bench: dist/build/pokemon/pokemon
 	cabal bench --jobs=$(PROCS)
 
-.PHONY: test check
+.PHONY: check
 check: test
-test: $(SOURCES)
-	cabal test --jobs=$(PROCS)
+	hlint $(SUBDIRS)
+	stylish-haskell -i $(shell find $(SUBDIRS) -name "*.hs")
+	git diff --exit-code --ignore-submodules
+
+.PHONY: test
+test: dist/build/pokemon/pokemon
+	cabal test --jobs=$(PROCS) | grep -v '^Writing: '
+
+dist/build/pokemon/pokemon: $(SOURCES)
+	cabal build --jobs=$(PROCS)
 
 dist/setup-config: pokemon.cabal protos/src/Pokemon.proto src/encrypt.c src/encrypt_clean.c
+	cabal update
 	cabal install --only-dependencies --enable-tests --enable-benchmarks
 	cabal configure --disable-profiling --enable-tests --enable-benchmarks
 

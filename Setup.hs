@@ -3,6 +3,8 @@ import           System.Directory     (doesFileExist)
 import           Data.ProtoLens.Setup
 import           Distribution.Simple
 
+
+main :: IO ()
 main = do
   needProto <- not <$> doesFileExist "dist/build/autogen/Proto/Pokemon.hs"
   if needProto

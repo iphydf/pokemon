@@ -6,7 +6,7 @@ addons:
     sources:
       - hvr-ghc
     packages:
-      - cabal-install-1.22
+      - cabal-install-1.24
       - ghc-8.0.1
 
 cache:
@@ -16,7 +16,7 @@ cache:
 
 install:
   # Set up PATH for the /opt packages.
-  - export PATH=/opt/cabal/1.22/bin:$PATH
+  - export PATH=/opt/cabal/1.24/bin:$PATH
   - export PATH=/opt/ghc/8.0.1/bin:$PATH
   - export PATH=$HOME/.cabal/bin:$PATH
   # Make sure the submodules are up-to-date.

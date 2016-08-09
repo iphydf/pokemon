@@ -1,8 +1,11 @@
 module Algorithms.Geometry.S2.S2CapSpec where
 
+import           Control.Monad                          (unless)
 import           Data.Default.Class                     (def)
 import           Data.Int                               (Int32)
+import qualified Data.Maybe                             as Maybe
 import           Foreign.Ptr                            (Ptr)
+import           System.Environment                     (lookupEnv)
 import           Test.CppEquivalence
 import           Test.Hspec
 import           Test.QuickCheck
@@ -25,7 +28,9 @@ spec =
     let region = S2Cap.fromAxisAngle (S2LatLng.toPoint $ S2LatLng.fromDegrees lat lng) (S1Angle.fromDegrees (360 * radius / (2 * pi * S2LatLng.earthRadius)))
     let coverer = def { S2RegionCoverer.minLevel = 15, S2RegionCoverer.maxLevel = 15 }
     let coverage = S2RegionCoverer.getCovering coverer region
-    print coverage
+    travis <- Maybe.isJust <$> lookupEnv "TRAVIS"
+    unless travis $
+      print coverage
 {-
   equiv1 "fromDegrees" S2Cap.fromDegrees c_S2Cap_fromDegrees
   equiv1 "fromRadians" S2Cap.fromRadians c_S2Cap_fromRadians
