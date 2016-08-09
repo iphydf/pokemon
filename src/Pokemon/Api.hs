@@ -16,6 +16,7 @@ import qualified Control.Monad.State          as State
 import           Control.Monad.Trans.Resource (MonadResource)
 import qualified Data.ByteString              as BS
 import           Data.Default.Class           (def)
+import qualified Data.Maybe                   as Maybe
 import           Data.ProtoLens               (showMessage)
 import qualified Data.Result                  as Result
 import qualified Data.Text                    as Text
@@ -66,24 +67,39 @@ getLocation address = do
   return $ Result.fromResult def $ detectedLocation <|> manualLocation
 
 
+getApiUrl :: MonadResource m => Proto.ResponseEnvelope -> m (Maybe Request)
+getApiUrl res =
+  let apiUrl = res ^. Proto.apiUrl in
+  if Text.null apiUrl
+    then return Nothing
+    else Just <$> parseUrlThrow ("https://" ++ Text.unpack apiUrl ++ "/rpc")
+
+
+getAuthTicket :: Proto.ResponseEnvelope -> Maybe Envelope.Auth
+getAuthTicket res =
+  let ticket = res ^. Proto.authTicket in
+  if ticket == def
+    then Nothing
+    else Just $ Envelope.AuthTicket ticket
+
+
 rpcCall :: MonadResource m => [Proto.Request] -> StateT (Context s) m [BS.ByteString]
 rpcCall reqs = do
   ctx@Context { manager, endpoint, nextId, location, auth, startTime } <- State.get
   liftIO $ putStrLn $ "[=] Making RPC call with " ++ Envelope.authName auth
 
-  now <- liftIO getPOSIXTime
+  now  <- liftIO getPOSIXTime
   uk22 <- liftIO randomIO
-  iv <- liftIO randomIO
+  iv   <- liftIO randomIO
   let envelope = Envelope.envelope nextId uk22 iv now startTime auth location reqs
   res <- Network.call manager endpoint envelope
 
-  newEndpoint <- parseUrlThrow $ "https://" ++ Text.unpack (res ^. Proto.apiUrl) ++ "/rpc"
-  let newAuthTicket = res ^. Proto.authTicket
+  newEndpoint <- getApiUrl res
 
   State.put ctx
-    { endpoint = newEndpoint
-    , nextId   = nextId + fromIntegral (length reqs)
-    , auth     = Envelope.AuthTicket newAuthTicket
+    { nextId   = nextId + fromIntegral (length reqs)
+    , endpoint = Maybe.fromMaybe endpoint newEndpoint
+    , auth     = Maybe.fromMaybe auth (getAuthTicket res)
     }
 
   case res ^. Proto.returns of

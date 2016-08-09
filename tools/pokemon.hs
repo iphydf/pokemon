@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main (main) where
 
+import           Control.Concurrent           (threadDelay)
 import           Control.Monad.IO.Class       (liftIO)
 import           Control.Monad.Trans.Resource (runResourceT)
 import           Data.Default.Class           (def)
@@ -43,9 +44,13 @@ main = do
 
   putStrLn "[=] Logging in..."
   runResourceT $ Game.run profile $ do
+    res <- Game.call $ Proto.GetPlayerMessage Game.version
+    liftIO $ putStrLn $ "----- GetPlayer -----\n" ++ showMessage res
+    liftIO $ threadDelay (1000 * 1000) -- 1 second before getting the map
     res <- Game.call getMapObjects
     liftIO $ putStrLn $ "----- MapObjects -----\n" ++ showMessage res
 
+    liftIO $ threadDelay (1000 * 1000 * 10) -- 10 seconds delay between map updates
     (r1, r2, r3, r4, r5, r6, r7) <- Game.call
       ( Proto.GetPlayerMessage Game.version
       , def :: Proto.GetHatchedEggsMessage
