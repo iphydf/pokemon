@@ -42,4 +42,12 @@ script:
   - git diff --exit-code --ignore-submodules
 
 after_script:
+  - TIXDIR=dist/hpc/vanilla/tix/pokemon
+  - mkdir -p $TIXDIR
+  - hpc sum --exclude=Main --union *.tix --output=$TIXDIR/pokemon.tix
+  - hpc report `ls -d dist/hpc/mix/* | sed -e 's/^/--hpcdir=/'` $TIXDIR/pokemon.tix
   - hpc-coveralls pokemon
+
+branches:
+  only:
+    - master
