@@ -3,6 +3,8 @@ module Pokemon.EncryptSpec where
 
 import           Control.Monad   (join, when)
 import qualified Data.ByteString as BS
+import qualified Data.List       as List
+import qualified Data.List.Split as List
 import           System.Random   (randomIO)
 import           Test.Hspec
 import           Test.QuickCheck
@@ -32,6 +34,13 @@ spec = do
         decrypted <- Encrypt.sub9E9D8 (Encrypt.Block encrypted)
         encrypted `shouldNotBe` decrypted
 
+    it "operates on 4 bytes at a time, performs no rotations within them" $ do
+      let input = Encrypt.Block . BS.pack . join . map (replicate 4) $ [0..63]
+      encrypted <- Encrypt.sub9E9D8 input
+      let chunks = List.chunksOf 4 $ BS.unpack encrypted
+      -- Each of the 4-byte chunks contains all the same bytes.
+      mapM_ (\x -> length (List.nub x) `shouldBe` 1) chunks
+
 
   describe "encrypt" $ do
     it "produces output whose length depends on the input length" $
@@ -41,19 +50,15 @@ spec = do
         let totalSize = inputSize + Encrypt.blockSize - (inputSize `rem` Encrypt.blockSize) + Encrypt.expectedIvSize
         BS.length encrypted `shouldBe` totalSize
 
-    it "operates on 4 bytes at a time" $ do
-      let input = Encrypt.PlainText . BS.take (Encrypt.blockSize - 1) . BS.pack . join . map (replicate 4) $ [0..63]
-      encrypted <-
-        BS.unpack . BS.drop Encrypt.expectedIvSize . Encrypt.unCipherText
-          <$> Encrypt.encryptIO Encrypt.nullIV input
-      length encrypted `shouldBe` Encrypt.blockSize
-
-    it "does not lose information" $ do
+    it "rounds 255 bytes up to 256" $ do
       let input = Encrypt.PlainText $ BS.pack [0..254]
       encrypted <- Encrypt.encryptIO Encrypt.nullIV input
-      putStrLn $ "x    = " ++ show input
-      putStrLn $ "f(x) = " ++ show encrypted
-      BS.length (Encrypt.unCipherText encrypted) `shouldBe` Encrypt.blockSize + Encrypt.expectedIvSize
+      BS.length (Encrypt.unCipherText encrypted) `shouldBe` Encrypt.expectedIvSize + Encrypt.blockSize
+
+    it "rounds 256 bytes up to 512" $ do
+      let input = Encrypt.PlainText $ BS.pack [0..255]
+      encrypted <- Encrypt.encryptIO Encrypt.nullIV input
+      BS.length (Encrypt.unCipherText encrypted) `shouldBe` Encrypt.expectedIvSize + 2 * Encrypt.blockSize
 
     it "is a pure function" $
       property $ \iv input -> do

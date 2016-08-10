@@ -177,6 +177,7 @@ test-suite testsuite
     , ieee754
     , hspec
     , random
+    , split
   main-is: testsuite.hs
 
 benchmark benchmarks

@@ -3,6 +3,9 @@
 extern "C" {
   void c_S1Angle_fromDegrees (S1Angle &r, double  &a1) { r = S1Angle::Degrees (a1); }
   void c_S1Angle_fromRadians (S1Angle &r, double  &a1) { r = S1Angle::Radians (a1); }
+  void c_S1Angle_e5          (int32   &r, S1Angle &a1) { r = a1.e5 (); }
+  void c_S1Angle_e6          (int32   &r, S1Angle &a1) { r = a1.e6 (); }
+  void c_S1Angle_e7          (int32   &r, S1Angle &a1) { r = a1.e7 (); }
   void c_S1Angle_fromE5      (S1Angle &r, int32   &a1) { r = S1Angle::E5 (a1); }
   void c_S1Angle_fromE6      (S1Angle &r, int32   &a1) { r = S1Angle::E6 (a1); }
   void c_S1Angle_fromE7      (S1Angle &r, int32   &a1) { r = S1Angle::E7 (a1); }

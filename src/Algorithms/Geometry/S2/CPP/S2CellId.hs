@@ -18,3 +18,4 @@ foreign import ccall c_S2CellId_fromFacePosLevel  :: Ptr S2CellId -> Ptr Face ->
 foreign import ccall c_S2CellId_fromFaceIJ        :: Ptr S2CellId -> Ptr Face -> Ptr Int -> Ptr Int -> IO ()
 foreign import ccall c_S2CellId_fromPoint         :: Ptr S2CellId -> Ptr S2Point -> IO ()
 foreign import ccall c_S2CellId_fromLatLng        :: Ptr S2CellId -> Ptr S2LatLng -> IO ()
+foreign import ccall c_S2CellId_level             :: Ptr Int -> Ptr S2CellId -> IO ()

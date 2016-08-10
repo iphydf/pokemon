@@ -18,8 +18,7 @@ bench: dist/build/pokemon/pokemon
 .PHONY: check
 check: test
 	hlint $(SUBDIRS)
-	stylish-haskell -i $(shell find $(SUBDIRS) -name "*.hs")
-	git diff --exit-code --ignore-submodules
+	stylish-haskell -i `find $(SUBDIRS) -name "*.hs"`
 
 .PHONY: test
 test: dist/build/pokemon/pokemon
@@ -31,7 +30,7 @@ dist/build/pokemon/pokemon: $(SOURCES)
 dist/setup-config: pokemon.cabal protos/src/Pokemon.proto src/encrypt.c src/encrypt_clean.c
 	cabal update
 	cabal install --only-dependencies --enable-tests --enable-benchmarks
-	cabal configure --disable-profiling --enable-tests --enable-benchmarks
+	cabal configure --disable-profiling --enable-tests --enable-benchmarks --enable-coverage
 
 protos/src/Pokemon.proto: $(shell find protos/src/POGOProtos -name "*.proto")
 	echo 'syntax = "proto3";' > $@

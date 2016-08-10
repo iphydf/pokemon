@@ -12,6 +12,7 @@ extern "C" {
   void c_S2CellId_fromFaceIJ (S2CellId &r, int &a1, int &a2, int &a3) { r = S2CellId::FromFaceIJ (a1, a2, a3); }
   void c_S2CellId_fromPoint (S2CellId &r, S2Point &a1) { r = S2CellId::FromPoint (a1); }
   void c_S2CellId_fromLatLng (S2CellId &r, S2LatLng &a1) { r = S2CellId::FromLatLng (a1); }
+  void c_S2CellId_level (long &r, S2CellId &a1) { r = a1.level (); }
 
   uint64 optc_S2CellId_fromFaceIJ (int a1, int a2, int a3) { return S2CellId::FromFaceIJ (a1, a2, a3).id (); }
 }

@@ -16,6 +16,9 @@ spec :: Spec
 spec = do
   equiv1 "fromDegrees" S1Angle.fromDegrees c_S1Angle_fromDegrees
   equiv1 "fromRadians" S1Angle.fromRadians c_S1Angle_fromRadians
+  --equiv1 "e5" S1Angle.e5 c_S1Angle_e5
+  --equiv1 "e6" S1Angle.e6 c_S1Angle_e6
+  --equiv1 "e7" S1Angle.e7 c_S1Angle_e7
   equiv1 "fromE5" S1Angle.fromE5 c_S1Angle_fromE5
   equiv1 "fromE6" S1Angle.fromE6 c_S1Angle_fromE6
   equiv1 "fromE7" S1Angle.fromE7 c_S1Angle_fromE7
