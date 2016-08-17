@@ -109,12 +109,9 @@ spec = do
       property $ \iv input -> do
         encrypted <- Encrypt.encryptIO iv input
         decrypted <- Encrypt.decryptIO encrypted
-        putStrLn $ "input: " ++ show input
-        putStrLn $ "encrypted: " ++ show encrypted
-        putStrLn $ "decrypted: " ++ show decrypted
-        --BS.unpack (Encrypt.unPlainText decrypted)
-        --  `shouldStartWith`
-        --  BS.unpack (Encrypt.unPlainText input)
+        BS.unpack (Encrypt.unPlainText decrypted)
+          `shouldStartWith`
+          BS.unpack (Encrypt.unPlainText input)
 
 
   describe "random" $

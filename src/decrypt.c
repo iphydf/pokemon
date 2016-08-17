@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-void decrypt_raw(int32_t* vector) {
-  int32_t tmp[205];
+void decrypt_raw(uint32_t* vector) {
+  uint32_t tmp[205];
   tmp[0] = vector[3] & vector[19];
   tmp[1] = vector[9] | vector[25];
   tmp[2] = vector[7] & vector[31];
@@ -2833,33 +2833,26 @@ void decrypt(const unsigned char* input_ciphertext, const size_t input_size, uns
   memcpy(iv.data, input_ciphertext, 32);
 
   struct Cipher8 cipher8 = CreateCipherIV(iv);
-  int32_t* cipher32 = (int32_t*)cipher8.data;
-  for (int i = 0; i < 8; i++)
-  {
-    for (int j = 0; j < 32; j++)
-    {
-      cipher8.data[32 * i + j] = rotl8(iv.data[j], i); //rotate byte left
-    }
-  }
+  uint32_t* cipher32 = (uint32_t*)cipher8.data;
 
   // Decrypt in chunks of 256 bytes
   for (uint32_t offset = 0; offset < payload_size ; offset += 256) {
     uint8_t tmp[256];
-    memcpy(tmp, output + offset, 256);
-    decrypt_raw((int32_t*)(output + offset));
+    uint32_t *block = (uint32_t*)(output + offset);
+    memcpy(tmp, block, 256);
+    decrypt_raw(block);
     for (int ii = 0; ii < 64; ii++) {
-      output[offset + ii] ^= cipher32[ii];
+      block[ii] ^= cipher32[ii];
     }
     memcpy(cipher8.data, tmp, 256);
   }
 
+  *output_size = input_size - 32 - output[payload_size - 1];
   if (output_plaintext == NULL) {
-    *output_size = input_size - 32 - output[payload_size - 1];
     free(output);
     return;
   }
 
-  *output_size = input_size - 32 - output[payload_size - 1];
   memcpy(output_plaintext, output, *output_size);
   free(output);
 }

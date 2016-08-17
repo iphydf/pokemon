@@ -1,6 +1,9 @@
-{-# OPTIONS_GHC -fconstraint-solver-iterations=6 #-}
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
+#if __GLASGOW_HASKELL__ >= 800
+{-# OPTIONS_GHC -fconstraint-solver-iterations=6 #-}
+#endif
 module Pokemon.Envelope where
 
 import qualified Data.Binary          as Binary
