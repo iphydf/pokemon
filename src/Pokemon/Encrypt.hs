@@ -4,6 +4,8 @@ module Pokemon.Encrypt
   , IV
   , nullIV
   , ivToBS
+  , SessionHash
+  , sessionHashToBS
   , PlainText (..)
   , CipherText (..)
   , encryptIO
@@ -66,6 +68,37 @@ foreign import ccall unsafe "xxhash.h XXH64"
           -> IO CULLong
 
 
+sessionHashSize :: Int
+sessionHashSize = 16
+
+
+newtype SessionHash = SessionHash { sessionHashToBS :: BS.ByteString }
+  deriving (Eq)
+
+instance Show SessionHash where
+  show = show . Base16.encode . sessionHashToBS
+
+instance Read SessionHash where
+  readPrec = do
+    bs <- fst . Base16.decode <$> readPrec
+    if BS.length bs /= sessionHashSize
+      then fail $ "session hash length invalid: " ++ show (BS.length bs)
+      else return $ SessionHash bs
+
+instance Arbitrary SessionHash where
+  arbitrary = SessionHash . BS.pack <$> Gen.vectorOf sessionHashSize arbitrary
+
+instance Random SessionHash where
+  randomR = fail "range-constrained random is not supported for session hash"
+
+  random g =
+    first (SessionHash . BS.pack)
+      $ foldl
+          (\(l, g') _ -> let (e, g'') = random g' in (e:l, g''))
+          ([], g)
+          [1..sessionHashSize]
+
+
 expectedIvSize :: Int
 expectedIvSize = 32
 
@@ -77,7 +110,11 @@ instance Show IV where
   show = show . Base16.encode . ivToBS
 
 instance Read IV where
-  readPrec = IV . fst . Base16.decode <$> readPrec
+  readPrec = do
+    bs <- fst . Base16.decode <$> readPrec
+    if BS.length bs /= expectedIvSize
+      then fail $ "IV length invalid: " ++ show (BS.length bs)
+      else return $ IV bs
 
 instance Arbitrary IV where
   arbitrary = IV . BS.pack <$> Gen.vectorOf expectedIvSize arbitrary

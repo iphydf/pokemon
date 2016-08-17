@@ -24,9 +24,9 @@ import           Pokemon.Proto        (AuthTicket, Request, RequestEnvelope,
                                        encryptedSignature, latitude,
                                        locationHash1, locationHash2, longitude,
                                        requestHash, requestId, requestType,
-                                       requests, statusCode, timestamp,
-                                       timestampSinceStart, unknown12, unknown2,
-                                       unknown22, unknown6)
+                                       requests, sessionHash, statusCode,
+                                       timestamp, timestampSinceStart,
+                                       unknown12, unknown2, unknown25, unknown6)
 
 
 data Auth
@@ -43,16 +43,16 @@ locationBytes :: Location -> Encrypt.PlainText
 locationBytes = Encrypt.PlainText . LBS.toStrict . Binary.encode
 
 
-generateLocation1 :: BS.ByteString -> Location -> Word32
+generateLocation1 :: BS.ByteString -> Location -> Word64
 generateLocation1 bs loc =
   let
     firstHash = Encrypt.xxHash32 0x1B845238 (Encrypt.PlainText bs)
   in
-  Encrypt.xxHash32 firstHash $ locationBytes loc
+  fromIntegral $ Encrypt.xxHash32 firstHash $ locationBytes loc
 
-generateLocation2 :: Location -> Word32
+generateLocation2 :: Location -> Word64
 generateLocation2 loc =
-  Encrypt.xxHash32 0x1B845238 $ locationBytes loc
+  fromIntegral $ Encrypt.xxHash32 0x1B845238 $ locationBytes loc
 
 generateRequestHash :: BS.ByteString -> Request -> Word64
 generateRequestHash ticket request =
@@ -62,7 +62,14 @@ generateRequestHash ticket request =
   Encrypt.xxHash64 firstHash (Encrypt.PlainText $ encodeMessage request)
 
 
-authenticate :: Encrypt.IV -> Encrypt.IV -> NominalDiffTime -> NominalDiffTime -> Auth -> RequestEnvelope -> RequestEnvelope
+authenticate
+  :: Encrypt.SessionHash
+  -> Encrypt.IV
+  -> NominalDiffTime
+  -> NominalDiffTime
+  -> Auth
+  -> RequestEnvelope
+  -> RequestEnvelope
 authenticate _ _ _ _ (AccessToken accessToken) env =
   env & authInfo .~ ptcAuthInfo
   where
@@ -73,7 +80,7 @@ authenticate _ _ _ _ (AccessToken accessToken) env =
             accessToken
             59))
 
-authenticate uk22 iv now startTime (AuthTicket ticket) env =
+authenticate sHash iv now startTime (AuthTicket ticket) env =
   env
     & authTicket .~ ticket
     & unknown6   .~ uk6
@@ -93,17 +100,27 @@ authenticate uk22 iv now startTime (AuthTicket ticket) env =
       & encryptedSignature .~ Encrypt.encrypt iv (Encrypt.PlainText sig)
 
     sig = encodeMessage $ (def :: Signature)
-      & locationHash1 .~ generateLocation1 ticketSerialised loc
-      & locationHash2 .~ generateLocation2 loc
-      & requestHash .~ map (generateRequestHash ticketSerialised) (env ^. requests)
-      & unknown22 .~ Encrypt.ivToBS uk22
-      & timestamp .~ round (now * 1000)
+      & locationHash1       .~ generateLocation1 ticketSerialised loc
+      & locationHash2       .~ generateLocation2 loc
+      & requestHash         .~ map (generateRequestHash ticketSerialised) (env ^. requests)
+      & sessionHash         .~ Encrypt.sessionHashToBS sHash
+      & timestamp           .~ round (now * 1000)
       & timestampSinceStart .~ round ((now - startTime) * 1000)
+      & unknown25           .~ fromIntegral (Encrypt.xxHash64 0x88533787 "\"b8fa9757195897aae92c53dbcf8a60fb3d86d745\"")
 
 
-envelope :: Word64 -> Encrypt.IV -> Encrypt.IV -> NominalDiffTime -> NominalDiffTime -> Auth -> Location -> [Request] -> RequestEnvelope
-envelope reqId uk22 iv now startTime auth location reqs =
-  authenticate uk22 iv now startTime auth $ (def :: RequestEnvelope)
+envelope
+  :: Word64
+  -> Encrypt.SessionHash
+  -> Encrypt.IV
+  -> NominalDiffTime
+  -> NominalDiffTime
+  -> Auth
+  -> Location
+  -> [Request]
+  -> RequestEnvelope
+envelope reqId sHash iv now startTime auth location reqs =
+  authenticate sHash iv now startTime auth $ (def :: RequestEnvelope)
     & statusCode .~ 2
     & requestId  .~ reqId
     & requests   .~ reqs
