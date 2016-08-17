@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fconstraint-solver-iterations=5 #-}
+{-# OPTIONS_GHC -fconstraint-solver-iterations=6 #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Pokemon.Envelope where

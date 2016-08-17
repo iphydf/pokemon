@@ -96,6 +96,27 @@ spec = do
         encrypted1 `shouldBe` encrypted2
 
 
+  describe "decrypt" $ do
+    it "can decrypt encrypted text with null IV" $
+      property $ \input -> do
+        encrypted <- Encrypt.encryptIO Encrypt.nullIV input
+        decrypted <- Encrypt.decryptIO encrypted
+        BS.unpack (Encrypt.unPlainText decrypted)
+          `shouldStartWith`
+          BS.unpack (Encrypt.unPlainText input)
+
+    it "can decrypt encrypted text with arbitrary IV" $
+      property $ \iv input -> do
+        encrypted <- Encrypt.encryptIO iv input
+        decrypted <- Encrypt.decryptIO encrypted
+        putStrLn $ "input: " ++ show input
+        putStrLn $ "encrypted: " ++ show encrypted
+        putStrLn $ "decrypted: " ++ show decrypted
+        --BS.unpack (Encrypt.unPlainText decrypted)
+        --  `shouldStartWith`
+        --  BS.unpack (Encrypt.unPlainText input)
+
+
   describe "random" $
     it "generates 32 byte IVs" $ do
       iv <- randomIO

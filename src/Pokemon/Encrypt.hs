@@ -11,6 +11,8 @@ module Pokemon.Encrypt
   , encryptIO
   , encryptCleanIO
   , encrypt
+  , decryptIO
+  , decrypt
   , xxHash32IO
   , xxHash32
   , xxHash64IO
@@ -54,6 +56,8 @@ type EncryptFn
 
 foreign import ccall "encrypt" c_encrypt :: EncryptFn
 foreign import ccall "encrypt_clean" c_encrypt_clean :: EncryptFn
+
+foreign import ccall "decrypt" c_decrypt :: CString -> CSize -> CString -> Ptr CSize -> IO ()
 
 foreign import ccall unsafe "xxhash.h XXH32"
   c_XXH32 :: CString -- ^ Data
@@ -186,6 +190,20 @@ encryptCleanIO :: IV -> PlainText -> IO CipherText
 encryptCleanIO = callEncryptIO c_encrypt_clean
 
 
+decryptIO :: CipherText -> IO PlainText
+decryptIO (CipherText bs) =
+  BS.useAsCStringLen bs $ \(input', inputLen) ->
+    alloca $ \size -> do
+      let inputSize = fromIntegral inputLen
+      c_decrypt input' inputSize nullPtr size
+      outputSize <- peek size
+      allocaBytes (fromIntegral outputSize) $ \output' ->
+        with outputSize $ \outputSize' -> do
+          c_decrypt input' inputSize output' outputSize'
+          totalSize <- peek outputSize'
+          PlainText <$> BS.packCStringLen (output', fromIntegral totalSize)
+
+
 xxHashIO :: (Integral a, Integral seed, Integral r)
          => (CString -> CSize -> a -> IO a) -> seed -> PlainText -> IO r
 xxHashIO f seed (PlainText bs) =
@@ -208,7 +226,10 @@ xxHash64 :: Word64 -> PlainText -> Word64
 xxHash64 seed = unsafePerformIO . xxHash64IO seed
 
 encrypt :: IV -> PlainText -> BS.ByteString
-encrypt iv input = unCipherText $ unsafePerformIO (encryptIO iv input)
+encrypt iv = unCipherText . unsafePerformIO . encryptIO iv
+
+decrypt :: CipherText -> BS.ByteString
+decrypt = unPlainText . unsafePerformIO . decryptIO
 
 
 --------------------------------------------------------------------------------

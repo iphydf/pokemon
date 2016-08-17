@@ -55,9 +55,13 @@ library
     , time
     , transformers
   extra-libraries:
-    stdc++
     crypto
     ssl
+  if os(osx)
+    extra-libraries: c++
+  else
+    extra-libraries: stdc++
+    cc-options: -std=c99
   include-dirs:
     /usr/local/opt/openssl/include
     src/Algorithms/Geometry/S2/CPP/s2/geometry
@@ -67,7 +71,6 @@ library
     -DS2_USE_EXACTFLOAT
     -Wno-return-type-c-linkage
     -Wno-#warnings
-    -std=c99
   c-sources:
     src/Algorithms/Geometry/S2/CPP/s2/geometry/base/logging.cc
     src/Algorithms/Geometry/S2/CPP/s2/geometry/base/strtoint.cc
@@ -85,6 +88,7 @@ library
     src/Algorithms/Geometry/S2/CPP/S2LatLng.cc
     src/Algorithms/Geometry/S2/CPP/S2Point.cc
     src/Algorithms/Geometry/S2/CPP/S2Projections.cc
+    src/decrypt.c
     src/encrypt.c
     src/encrypt_clean.c
     src/xxHash/xxhash.c
