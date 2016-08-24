@@ -1,8 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Pokemon.Config where
 
+import           Data.Default.Class        (def)
 import           Network.HTTP.Conduit      (Request (..))
 import           Network.HTTP.Types.Header (Header)
+
+import qualified Pokemon.Proto             as Proto
 
 
 userAgent :: Header
@@ -30,6 +33,10 @@ loginReq = setUserAgent
 loginOAuth :: Request
 loginOAuth = setUserAgent
   "https://sso.pokemon.com/sso/oauth2.0/accessToken"
+
+
+deviceInfo :: Proto.Signature'DeviceInfo
+deviceInfo = def
 
 
 -- vim:sw=2

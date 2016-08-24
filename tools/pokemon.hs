@@ -28,6 +28,12 @@ getFortDetails =
     51.507335 (-0.127689)
 
 
+getPlayer :: Proto.GetPlayerMessage
+getPlayer =
+  Proto.GetPlayerMessage $ Just $
+    Proto.GetPlayerMessage'PlayerLocale "en" "en_GB"
+
+
 readProfile :: IO Profile
 readProfile = do
   profileFile <- (++ "/.pokemon.hs") <$> getHomeDirectory
@@ -44,7 +50,7 @@ main = do
 
   putStrLn "[=] Logging in..."
   runResourceT $ Game.run profile $ do
-    res <- Game.call Proto.GetPlayerMessage
+    res <- Game.call getPlayer
     liftIO $ putStrLn $ "----- GetPlayer -----\n" ++ showMessage res
     liftIO $ threadDelay (1000 * 1000) -- 1 second before getting the map
     res <- Game.call getMapObjects
@@ -52,7 +58,7 @@ main = do
 
     liftIO $ threadDelay (1000 * 1000 * 10) -- 10 seconds delay between map updates
     (r1, r2, r3, r4, r5, r6, r7) <- Game.call
-      ( Proto.GetPlayerMessage
+      ( getPlayer
       , def :: Proto.GetHatchedEggsMessage
       , def :: Proto.GetInventoryMessage
       , def :: Proto.CheckAwardedBadgesMessage

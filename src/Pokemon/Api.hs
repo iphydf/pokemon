@@ -30,6 +30,7 @@ import           Network.HTTP.Conduit         (Manager, Request, newManager,
 import           System.Random                (randomIO)
 
 import qualified Pokemon.Config               as Config
+import qualified Pokemon.Encrypt              as Encrypt
 import qualified Pokemon.Envelope             as Envelope
 import qualified Pokemon.Geolocation.GeoClue2 as GeoClue2
 import qualified Pokemon.Geolocation.Geocode  as Geocode
@@ -47,6 +48,7 @@ data Context s = Context
   , manager   :: Manager
   , endpoint  :: Request
   , nextId    :: Word64
+  , sessionId :: Encrypt.SessionHash
   , location  :: Location
   , auth      :: Envelope.Auth
   , startTime :: NominalDiffTime
@@ -85,13 +87,12 @@ getAuthTicket res =
 
 rpcCall :: MonadResource m => [Proto.Request] -> StateT (Context s) m [BS.ByteString]
 rpcCall reqs = do
-  ctx@Context { manager, endpoint, nextId, location, auth, startTime } <- State.get
+  ctx@Context { manager, endpoint, nextId, sessionId, location, auth, startTime } <- State.get
   liftIO $ putStrLn $ "[=] Making RPC call with " ++ Envelope.authName auth
 
   now  <- liftIO getPOSIXTime
-  uk22 <- liftIO randomIO
   iv   <- liftIO randomIO
-  let envelope = Envelope.envelope nextId uk22 iv now startTime auth location reqs
+  let envelope = Envelope.envelope nextId sessionId iv now startTime auth location reqs
   res <- Network.call manager endpoint envelope
 
   newEndpoint <- getApiUrl res
@@ -119,6 +120,7 @@ run s profile api = do
   where
     context manager = Context s manager Config.apiReq
       <$> liftIO randomIO
+      <*> liftIO randomIO
       <*> liftIO (getLocation $ Profile.address profile)
       <*> (Envelope.AccessToken <$> Login.login profile manager)
       <*> liftIO getPOSIXTime

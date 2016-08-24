@@ -16,6 +16,7 @@ import           Data.Time.Clock      (NominalDiffTime)
 import           Data.Word            (Word32, Word64)
 import           Lens.Family2         ((&), (.~), (^.))
 
+import qualified Pokemon.Config       as Config
 import qualified Pokemon.Encrypt      as Encrypt
 import           Pokemon.Location     (Location)
 import qualified Pokemon.Location     as Location
@@ -24,12 +25,13 @@ import           Pokemon.Proto        (AuthTicket, Request, RequestEnvelope,
                                        RequestEnvelope'AuthInfo'JWT (..),
                                        Signature, Unknown6, Unknown6'Unknown2,
                                        altitude, authInfo, authTicket,
-                                       encryptedSignature, latitude,
+                                       deviceInfo, encryptedSignature, latitude,
                                        locationHash1, locationHash2, longitude,
-                                       requestHash, requestId, requestType,
-                                       requests, sessionHash, statusCode,
-                                       timestamp, timestampSinceStart,
-                                       unknown12, unknown2, unknown25, unknown6)
+                                       msSinceLastLocationfix, requestHash,
+                                       requestId, requestType, requests,
+                                       sessionHash, statusCode, timestamp,
+                                       timestampSinceStart, unknown2, unknown25,
+                                       unknown6)
 
 
 data Auth
@@ -86,7 +88,7 @@ authenticate _ _ _ _ (AccessToken accessToken) env =
 authenticate sHash iv now startTime (AuthTicket ticket) env =
   env
     & authTicket .~ ticket
-    & unknown6   .~ uk6
+    & unknown6   .~ [uk6]
   where
     lat = env ^. latitude
     lng = env ^. longitude
@@ -103,6 +105,7 @@ authenticate sHash iv now startTime (AuthTicket ticket) env =
       & encryptedSignature .~ Encrypt.encrypt iv (Encrypt.PlainText sig)
 
     sig = encodeMessage $ (def :: Signature)
+      & deviceInfo          .~ Config.deviceInfo
       & locationHash1       .~ generateLocation1 ticketSerialised loc
       & locationHash2       .~ generateLocation2 loc
       & requestHash         .~ map (generateRequestHash ticketSerialised) (env ^. requests)
@@ -124,13 +127,13 @@ envelope
   -> RequestEnvelope
 envelope reqId sHash iv now startTime auth location reqs =
   authenticate sHash iv now startTime auth $ (def :: RequestEnvelope)
-    & statusCode .~ 2
-    & requestId  .~ reqId
-    & requests   .~ reqs
-    & latitude   .~ Location.latitude location
-    & longitude  .~ Location.longitude location
-    & altitude   .~ Location.altitude location
-    & unknown12  .~ 989
+    & statusCode              .~ 2
+    & requestId               .~ reqId
+    & requests                .~ reqs
+    & latitude                .~ Location.latitude location
+    & longitude               .~ Location.longitude location
+    & altitude                .~ Location.altitude location
+    & msSinceLastLocationfix  .~ 989
 
 
 -- vim:sw=2
