@@ -176,6 +176,8 @@ test-suite testsuite
       base < 5
     , pokemon
     , QuickCheck
+    , proto-lens
+    , proto-lens-arbitrary
     , bytestring
     , data-default-class
     , ieee754

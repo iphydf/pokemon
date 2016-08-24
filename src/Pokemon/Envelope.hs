@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 #if __GLASGOW_HASKELL__ >= 800
-{-# OPTIONS_GHC -fconstraint-solver-iterations=6 #-}
+{-# OPTIONS_GHC -fconstraint-solver-iterations=0 #-}
 #endif
 module Pokemon.Envelope where
 
@@ -10,7 +10,7 @@ import qualified Data.Binary          as Binary
 import qualified Data.ByteString      as BS
 import qualified Data.ByteString.Lazy as LBS
 import           Data.Default.Class   (def)
-import           Data.ProtoLens       (encodeMessage)
+import           Data.ProtoLens       (decodeMessage, encodeMessage)
 import           Data.Text            (Text)
 import           Data.Time.Clock      (NominalDiffTime)
 import           Data.Word            (Word32, Word64)
@@ -23,9 +23,10 @@ import qualified Pokemon.Location     as Location
 import           Pokemon.Proto        (AuthTicket, Request, RequestEnvelope,
                                        RequestEnvelope'AuthInfo (..),
                                        RequestEnvelope'AuthInfo'JWT (..),
-                                       Signature, Unknown6, Unknown6'Unknown2,
-                                       altitude, authInfo, authTicket,
-                                       deviceInfo, encryptedSignature, latitude,
+                                       Signature, Unknown6,
+                                       Unknown6'Unknown2 (..), altitude,
+                                       authInfo, authTicket, deviceInfo,
+                                       encryptedSignature, latitude,
                                        locationHash1, locationHash2, longitude,
                                        msSinceLastLocationfix, requestHash,
                                        requestId, requestType, requests,
@@ -67,6 +68,16 @@ generateRequestHash ticket request =
   Encrypt.xxHash64 firstHash (Encrypt.PlainText $ encodeMessage request)
 
 
+encodeSignature :: Encrypt.IV -> Signature -> Unknown6'Unknown2
+encodeSignature iv =
+  Unknown6'Unknown2 . Encrypt.encrypt iv . Encrypt.PlainText . encodeMessage
+
+
+decodeSignature :: Unknown6'Unknown2 -> Either String Signature
+decodeSignature uk2 =
+  decodeMessage $ Encrypt.decrypt $ Encrypt.CipherText (uk2 ^. encryptedSignature)
+
+
 authenticate
   :: Encrypt.SessionHash
   -> Encrypt.IV
@@ -99,12 +110,9 @@ authenticate sHash iv now startTime (AuthTicket ticket) env =
 
     uk6 = (def :: Unknown6)
       & requestType .~ 6
-      & unknown2 .~ uk2
+      & unknown2 .~ encodeSignature iv sig
 
-    uk2 = (def :: Unknown6'Unknown2)
-      & encryptedSignature .~ Encrypt.encrypt iv (Encrypt.PlainText sig)
-
-    sig = encodeMessage $ (def :: Signature)
+    sig = (def :: Signature)
       & deviceInfo          .~ Config.deviceInfo
       & locationHash1       .~ generateLocation1 ticketSerialised loc
       & locationHash2       .~ generateLocation2 loc

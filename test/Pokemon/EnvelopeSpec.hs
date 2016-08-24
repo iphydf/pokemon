@@ -1,11 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Pokemon.EnvelopeSpec where
 
+import           Control.Monad            (when)
+import qualified Data.ByteString          as BS
+import           Data.ProtoLens           (decodeMessage, showMessage)
+import           Data.ProtoLens.Arbitrary (unArbitraryMessage)
 import           Test.Hspec
 import           Test.QuickCheck
 
-import qualified Pokemon.Envelope as Envelope
-import qualified Pokemon.Location as Location
+import qualified Pokemon.Encrypt          as Encrypt
+import qualified Pokemon.Envelope         as Envelope
+import qualified Pokemon.Location         as Location
+import qualified Pokemon.Proto            as Proto
 
 
 spec :: Spec
@@ -23,3 +29,18 @@ spec = do
   describe "generateLocation2" $
     it "does the same as the Python version" $
       Envelope.generateLocation2 (Location.fromLatLngAlt 1 1 1) `shouldBe` 4239058444
+
+  describe "decodeSignature" $ do
+    it "can decode signatures made by encodeSignature" $
+      property $ \iv sig' ->
+        let sig = unArbitraryMessage sig' in
+        Envelope.decodeSignature (Envelope.encodeSignature iv sig) `shouldBe` Right sig
+
+    it "can decode purchase.req" $
+      when False $ do
+        bytes <- BS.readFile "purchase.req"
+        let Right req = decodeMessage bytes
+        let [_, encodedReq] = Proto._RequestEnvelope'unknown6 req
+        let Just encodedSig = Proto._Unknown6'unknown2 encodedReq
+        let Right decodedSig = Envelope.decodeSignature encodedSig
+        putStrLn (showMessage decodedSig)
