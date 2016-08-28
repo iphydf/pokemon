@@ -34,7 +34,7 @@ instance Default Location where
   def = Location
     -- Somewhere in London
     { description = "London, UK"
-    , accuracy    = 0
+    , accuracy    = 10
     , latitude    = 51.507351
     , longitude   = -0.127758
     , altitude    = 14 -- Elevation in London.
@@ -42,7 +42,23 @@ instance Default Location where
 
 
 fromLatLngAlt :: Double -> Double -> Double -> Location
-fromLatLngAlt = Location "<code>" 0
+fromLatLngAlt lat lng alt = Location
+  { description = "<code>"
+  , accuracy    = 0
+  , latitude    = lat
+  , longitude   = lng
+  , altitude    = alt
+  }
+
+
+fromLatLngAcc :: Double -> Double -> Double -> Location
+fromLatLngAcc lat lng acc = Location
+  { description = "<code>"
+  , accuracy    = acc
+  , latitude    = lat
+  , longitude   = lng
+  , altitude    = 0
+  }
 
 
 -- vim:sw=2

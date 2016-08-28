@@ -7,6 +7,9 @@ PROCS	:= $(shell sysctl -n hw.ncpu)
 endif
 
 
+SCALAR_NUMERIC := fixed32|fixed64|int32|int64|uint32|uint64|float|bool
+
+
 .PHONY: run
 run: dist/build/pokemon/pokemon
 	cabal run pokemon --jobs=$(PROCS)
@@ -36,7 +39,8 @@ protos/src/Pokemon.proto: $(shell find protos/src/POGOProtos -name "*.proto")
 	echo 'syntax = "proto3";' > $@
 	(for i in $^; do cat $$i; echo; done) \
 		| egrep -v '^(syntax|package|import)' \
-		| sed -e 's/\.POGOProtos\.[^ ]*\.//g' \
+		| sed -E -e 's/\.POGOProtos\.[^ ]+\.//g' \
+		| sed -E -e 's/(repeated (${SCALAR_NUMERIC}) [a-z_]+ = [0-9]+);/\1 [packed=true];/' \
 		>> $@
 
 src/encrypt.c:

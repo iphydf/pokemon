@@ -24,7 +24,7 @@ import           Pokemon.Proto        (AuthTicket, Request, RequestEnvelope,
                                        RequestEnvelope'AuthInfo (..),
                                        RequestEnvelope'AuthInfo'JWT (..),
                                        Signature, Unknown6,
-                                       Unknown6'Unknown2 (..), altitude,
+                                       Unknown6'Unknown2 (..), accuracy,
                                        authInfo, authTicket, deviceInfo,
                                        encryptedSignature, latitude,
                                        locationHash1, locationHash2, longitude,
@@ -103,8 +103,8 @@ authenticate sHash iv now startTime (AuthTicket ticket) env =
   where
     lat = env ^. latitude
     lng = env ^. longitude
-    alt = env ^. altitude
-    loc = Location.fromLatLngAlt lat lng alt
+    acc = env ^. accuracy
+    loc = Location.fromLatLngAcc lat lng acc
 
     ticketSerialised = encodeMessage ticket
 
@@ -140,7 +140,7 @@ envelope reqId sHash iv now startTime auth location reqs =
     & requests                .~ reqs
     & latitude                .~ Location.latitude location
     & longitude               .~ Location.longitude location
-    & altitude                .~ Location.altitude location
+    & accuracy                .~ Location.accuracy location
     & msSinceLastLocationfix  .~ 989
 
 

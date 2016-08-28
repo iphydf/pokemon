@@ -30,17 +30,8 @@ spec = do
     it "does the same as the Python version" $
       Envelope.generateLocation2 (Location.fromLatLngAlt 1 1 1) `shouldBe` 4239058444
 
-  describe "decodeSignature" $ do
+  describe "decodeSignature" $
     it "can decode signatures made by encodeSignature" $
       property $ \iv sig' ->
         let sig = unArbitraryMessage sig' in
         Envelope.decodeSignature (Envelope.encodeSignature iv sig) `shouldBe` Right sig
-
-    it "can decode purchase.req" $
-      when False $ do
-        bytes <- BS.readFile "purchase.req"
-        let Right req = decodeMessage bytes
-        let [_, encodedReq] = Proto._RequestEnvelope'unknown6 req
-        let Just encodedSig = Proto._Unknown6'unknown2 encodedReq
-        let Right decodedSig = Envelope.decodeSignature encodedSig
-        putStrLn (showMessage decodedSig)
