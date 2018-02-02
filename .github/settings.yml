@@ -1,0 +1,13 @@
+# See https://developer.github.com/v3/repos/#edit for all available settings.
+repository:
+  name: "pokemon"
+  description: "Haskell Pokemon Go API and client library"
+  homepage: "https://github.com/iphydf/pokemon"
+  private: false
+  has_issues: true
+  has_projects: true
+  has_wiki: false
+  default_branch: "master"
+  allow_squash_merge: false
+  allow_merge_commit: false
+  allow_rebase_merge: true
